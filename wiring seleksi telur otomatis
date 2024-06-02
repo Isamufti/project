@@ -1,0 +1,48 @@
+wiring diagram
+1. Loadcell : 
+kabel merah : E+
+Kabel item : E-
+Kabel Putih : A-
+Kabel Hijau : A+
+2. Modul Hx711
+Dt : 3
+SCK : 4
+4. Motorservo 1,2
+coklat : gnd
+merah : vcc
+orange1 : data pin digital11
+orange2 :data pin digital 10
+6. LDR
+[19/12/2023 04.05] °: wiring diagram
+1. Loadcell : 
+kabel merah : E+
+Kabel item : E-
+Kabel Putih : A-
+Kabel Hijau : A+
+2. Modul Hx711
+Dt : 3
+SCK : 4
+4. Motorservo 1,2
+coklat : gnd
+merah : vcc
+orange1 : data pin digital11
+orange2 :data pin digital 10
+6. LDR
+AO : A1,
+DO : digital2
+GND
+VCC
+8. Relay
+GND
+VCC
+COM : Phasa/+ Lampu masuk ke (beban)
+NO : + sumber
+Negatif lampu (beban) : -sumber
+10. LCD
+VCC
+GND
+SDA : A4
+SCL : A5
+12. Buzzer
+pin 9 : + buzzer (merah)
+GND : item (-)
