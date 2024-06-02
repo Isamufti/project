@@ -1,0 +1,47 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+const int voltageSensor = A1;
+const int relayPin = 2; // Pin yang akan digunakan untuk mengontrol relay
+float voltage_sensor_raw;
+float v_beban;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2); // Alamat I2C LCD mungkin berbeda, pastikan sesuai dengan modul LCD Anda
+
+void setup() {
+  Serial.begin(9600);
+  lcd.begin(); // Inisialisasi LCD
+  lcd.backlight(); // Aktifkan pencahayaan latar belakang pada LCD
+  pinMode(voltageSensor, INPUT);
+  pinMode(relayPin, OUTPUT); // Atur pin relay sebagai OUTPUT
+}
+
+void loop() {
+  bacasensor();
+  Serial.print("nilai tegangan saat ini: ");
+  Serial.println(v_beban);
+
+  // Menampilkan nilai tegangan pada LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("VOLT: ");
+  lcd.print(v_beban);
+  lcd.print(" V");
+
+  // Tambahkan logika untuk mengontrol relay berdasarkan tiga kondisi
+  if (v_beban >= 4 && v_beban <= 7.5) {
+    digitalWrite(relayPin, LOW); // Matikan relay dalam kondisi pertama
+  } else if (v_beban >= 9 && v_beban <= 12.8) {
+    digitalWrite(relayPin, LOW); // Matikan relay dalam kondisi kedua
+  } else if (v_beban >= 22.0 && v_beban <= 24) {
+    digitalWrite(relayPin, LOW); // Matikan relay dalam kondisi ketiga
+  } else {
+    digitalWrite(relayPin, HIGH); // Aktifkan relay dalam kondisi lainnya
+  }
+}
+
+void bacasensor() {
+  voltage_sensor_raw = analogRead(voltageSensor);
+  v_beban = map(voltage_sensor_raw, 0, 1023, 0, 2500); // Konversi ke mV
+  v_beban = v_beban / 100.0; // Konversi ke Volt
+}
