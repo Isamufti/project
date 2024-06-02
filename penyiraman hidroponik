@@ -1,0 +1,135 @@
+// Include the required libraries
+#include <LiquidCrystal_I2C.h>
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+#include <RTClib.h>  // Library for RTC
+
+// Initialize the LCD display
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+char auth[] = "JeMgFW-FKBhq4eb7j_kgz7wsUoMXB9sW";  // Enter your Auth token
+char ssid[] = "Bale";  // Enter your WiFi name
+char pass[] = "b4l3w1f1";  // Enter your WiFi password
+
+BlynkTimer timer;
+bool pumpStatus = false;
+bool automaticMode = true;
+bool previousAutomaticMode = true;
+
+// Define component pins
+#define sensorPin A0
+#define pumpPin D3
+
+RTC_DS3231 rtc;  // Create an instance of the RTC
+DateTime pumpStartTime;  // Variable to store the pump start time
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(pumpPin, OUTPUT);
+  digitalWrite(pumpPin, LOW);
+  lcd.begin();
+  lcd.backlight();
+
+  Blynk.begin(auth, ssid, pass, "blynk.cloud", 80);
+
+  lcd.setCursor(1, 0);
+  lcd.print("System Loading");
+  for (int a = 0; a <= 15; a++) {
+    lcd.setCursor(a, 1);
+    lcd.print(".");
+    delay(500);
+  }
+  lcd.clear();
+
+  // Initialize the RTC
+  rtc.begin();
+
+  // Set the RTC time (uncomment and adjust as needed)
+  // rtc.adjust(DateTime(_DATE, __TIME_));
+
+  // Call the function
+  timer.setInterval(1000L, soilMoistureSensor);
+}
+
+// Read soil moisture values
+void soilMoistureSensor() {
+  int value = analogRead(sensorPin);
+  int moisture = map(value, 0, 1023, 0, 100);
+
+  Blynk.virtualWrite(V0, moisture);  // Send moisture value to V0
+  lcd.setCursor(0, 0);
+  lcd.print("Moisture: ");
+  lcd.print(moisture);
+  lcd.print("%");
+
+  // Check pump status based on mode and time
+  if (automaticMode) {
+    // Automatic mode
+    DateTime now = rtc.now();  // Get the current time from the RTC
+
+    if (now.hour() == 8 && now.minute() == 0 && now.second() >= 0 && now.second() <= 30) {
+      if (!pumpStatus) {
+        pumpStartTime = now;
+        turnOnPump();
+      } else if (now - pumpStartTime >= TimeSpan(0, 0, 1, 30)) {
+        turnOffPump();
+      }
+    } else if (now.hour() != 8 && pumpStatus) {
+      turnOffPump();
+    }
+  } else {
+    // Manual mode
+    if (previousAutomaticMode) {
+      if (pumpStatus) {
+        turnOnPump();
+      } else {
+        turnOffPump();
+      }
+    }
+  }
+
+  previousAutomaticMode = automaticMode;
+}
+
+// Turn on the pump
+void turnOnPump() {
+  digitalWrite(pumpPin, HIGH);
+  lcd.setCursor(0, 1);
+  lcd.print("Motor is ON ");
+  pumpStatus = true;
+}
+
+// Turn off the pump
+void turnOffPump() {
+  digitalWrite(pumpPin, LOW);
+  lcd.setCursor(0, 1);
+  lcd.print("Motor is OFF");
+  pumpStatus = false;
+}
+
+// Blynk button handler for controlling the pump manually
+BLYNK_WRITE(V1) {
+  int buttonState = param.asInt();
+  if (buttonState == HIGH) {
+    pumpStatus = true;
+    turnOnPump();
+  } else {
+    pumpStatus = false;
+    turnOffPump();
+  }
+}
+
+// Blynk button handler for switching between automatic and manual mode
+BLYNK_WRITE(V2) {
+  int buttonState = param.asInt();
+  if (buttonState == HIGH) {
+    automaticMode = true;
+  } else {
+    automaticMode = false;
+  }
+}
+
+void loop() {
+  Blynk.run();
+  timer.run();
+}
